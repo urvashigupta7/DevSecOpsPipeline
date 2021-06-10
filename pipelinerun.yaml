@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pipelinerun
+spec:
+  serviceAccountName: tutorial-service
+  pipelineRef:
+    name: mypipeline
+  params:
+  - name: repository
+    value: https://github.com/urvashigupta7/Go-Server
+  - name: image-name
+    value: go-app:v1
+  - name: manifest-dir
+    value: k8
+  workspaces:
+  - name: workspace
+    persistentvolumeclaim:
+      claimName: source-pvc
