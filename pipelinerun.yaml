@@ -1,19 +1,41 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: pipelinerun
+  name: devsecopspipelinerun
 spec:
-  serviceAccountName: tutorial-service
   pipelineRef:
-    name: mypipeline
-  params:
-  - name: repository
-    value: https://github.com/urvashigupta7/Go-Server
-  - name: image-name
-    value: go-app:v1
-  - name: manifest-dir
-    value: k8
+    name: devsecopspipeline
   workspaces:
-  - name: workspace
-    persistentvolumeclaim:
-      claimName: source-pvc
+    - name: workspace
+      persistentvolumeclaim:
+        claimName: source-pvc
+
+  params:
+    - name: git-repository-url
+      value: https://github.com/urvashigupta7/Go-Server
+    - name: manifest-dir
+      value: k8
+    - name: image-name
+      value: go-app:v1
+    - name: language
+      value: "1"
+    - name: manifest-file-path
+      value: go.mod
+    - name: pkg-installation-directory-path
+      value: dependency-directory
+    - name: report-file-path
+      value: crda-report.json
+    - name: crda-image
+      value: quay.io/ksoneji/crda:golang
+    - name: total-vulnerabilities
+      value: "3"
+    - name: critical-vulnerabilities
+      value: "0"
+    - name: high-vulnerabilities
+      value: "0"
+    - name: medium-vulnerabilities
+      value: "2"
+    - name: low-vulnerabilities
+      value: "3"
+    - name: output_format
+      value: "json"

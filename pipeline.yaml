@@ -1,15 +1,28 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: mypipeline
+  name: devsecopspipeline
 spec:
   params:
-    - name: repository
+    - name: git-repository-url
       type: string
     - name: image-name
       type: string
     - name: manifest-dir
       type: string
+    - name: language
+    - name: manifest-file-path
+    - name: pkg-installation-directory-path
+      default: dependency-directory
+    - name: report-file-path
+      default: crda-report.json
+    - name: crda-image
+    - name: total-vulnerabilities
+    - name: critical-vulnerabilities
+    - name: high-vulnerabilities
+    - name: medium-vulnerabilities
+    - name: low-vulnerabilities
+    - name: output_format
   workspaces:
   - name: workspace
   tasks:
@@ -21,7 +34,7 @@ spec:
       name: git-clone
     params:
       - name: url
-        value: $(params.repository)
+        value: $(params.git-repository-url)
       - name: deleteExisting
         value: "true"
   - name: secret-detection
@@ -34,16 +47,75 @@ spec:
         workspace: workspace
     params:
     - name: repo_path
-      value: contest-arena
+      value:  "."
     - name: output_format
-      value: json
+      value: $(params.output_format)
     - name: report_output_path
       value: report.json
     - name: args
       value: ["--verbose", "--no-git"]
-  - name: build
+  - name: setup-env
+    taskRef:
+      name: setup-env
     runAfter:
-    - clone-git-repo
+      - secret-detection
+    workspaces:
+    - name: output
+      workspace: workspace
+    params:
+      - name: language
+        value: $(params.language)
+      - name: pkg-installation-directory-path
+        value: $(params.pkg-installation-directory-path)
+      - name: manifest-file-path
+        value: $(params.manifest-file-path)
+      - name: image
+        value: $(params.crda-image)
+  - name: crda-task
+    taskRef:
+      name: crda-task
+    runAfter:
+      - setup-env
+    workspaces:
+      - name: output
+        workspace: workspace
+    params:
+      - name: language
+        value: $(params.language)
+      - name: pkg-installation-directory-path
+        value: $(params.pkg-installation-directory-path)
+      - name: manifest-file-path
+        value: $(params.manifest-file-path)
+      - name: image
+        value: $(params.crda-image)
+      - name: report-file-path
+        value: $(params.report-file-path)
+  - name: check-vulnerabilities
+    taskRef:
+      name: check-vulnerabilities
+    runAfter:
+      - crda-task
+    workspaces:
+      - name: output
+        workspace: workspace
+    params:   
+      - name: total-vulnerabilities
+        value: $(params.total-vulnerabilities)
+      - name: critical-vulnerabilities
+        value: $(params.critical-vulnerabilities)
+      - name: high-vulnerabilities
+        value: $(params.high-vulnerabilities)
+      - name: medium-vulnerabilities
+        value: $(params.medium-vulnerabilities)
+      - name: low-vulnerabilities
+        value: $(params.low-vulnerabilities)
+      - name: report-file-path
+        value: $(params.report-file-path)
+      - name: image
+        value: $(params.crda-image)
+  - name: build-push
+    runAfter:
+    - check-vulnerabilities
     taskRef:
       name: build
     workspaces:
@@ -52,9 +124,9 @@ spec:
     params:
       - name : image-name
         value: $(params.image-name)
-  - name: check
+  - name: deploy
     runAfter:
-    - build
+    - build-push
     taskRef:
       name: deploy
     workspaces:
