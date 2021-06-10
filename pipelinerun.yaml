@@ -39,3 +39,5 @@ spec:
       value: "3"
     - name: output_format
       value: "json"
+    - name: image-scan
+      value: "" 
